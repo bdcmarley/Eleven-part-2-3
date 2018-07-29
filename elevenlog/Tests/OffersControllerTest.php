@@ -29,12 +29,12 @@ class OffersControllerTest extends TestCase
             'price' => 555
         );
 
-        //
+        // On envoie notre requete.
         $response = $client->post('/offers/new', [
             'body' => json_encode($donnees_offer)
         ]);
 
         $this->assertEquals(201, $response->getStatusCode());
-  }
+    }
 }
 ?>

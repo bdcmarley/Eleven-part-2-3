@@ -20,7 +20,6 @@ use JMS\Serializer\SerializationContext;
 class OffersController extends Controller
 {
     // Puis on fait les methodes et leurs chemins que nous allons appeller pour avoir nos resultats, les endpoints.
-
     // La methode index sert a renvoyer une liste des offres, contenu donc dans notre base de donnees.
 
     /**
@@ -46,13 +45,16 @@ class OffersController extends Controller
     */
     public function new(Request $request): Response
     {
+        // On recuperee nos donnees pour la creation de l'offre.
         $donnee_offer = json_decode($request->getContent(), true);
         $offer = new Offers();
 
+        // On creer un fomulaire dans lequelle on va y apporter nos donneer
         $form = $this->createForm(OffersType::class, $offer);
         $form->setData($donnee_offer);
         $form->submit($donnee_offer);
 
+        // Si le fomulaire est envoyer et valider, on met le tout dans la base de donnees
         if($form->isSubmitted() && $form->isValid())
         {
             $database = $this->getDoctrine()->getManager();
@@ -61,6 +63,7 @@ class OffersController extends Controller
             return new Response('Tout est dans la database !', Response::HTTP_CREATED);
         }
 
+        // Sinon, on previent le client
         $validator = $this->get('validator');
         $errors = $validator->validate($offer);
 
@@ -143,3 +146,4 @@ class OffersController extends Controller
         return new Response('Supprimer', 204);
     }
 }
+?>
