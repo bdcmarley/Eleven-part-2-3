@@ -19,86 +19,72 @@ use JMS\Serializer\SerializationContext;
  */
 class OffersController extends Controller
 {
-  // Puis on fait les methodes ainsi que les chemins que nous allons appeller pour avoir nos resultats, les endpoints.
-  // La methode index sera donc appelle sur la route /offers.
+    // Puis on fait les methodes et leurs chemins que nous allons appeller pour avoir nos resultats, les endpoints.
+
+    // La methode index sert a renvoyer une liste des offres, contenu donc dans notre base de donnees.
 
     /**
-     * @Route("/", name="offers_index")
-     * @Method("GET")
-     */
+    * @Route("/", name="offers_index")
+    * @Method("GET")
+    */
     public function index(OffersRepository $offersRepository): Response
     {
-      // Symfony 4 nous permet d'avoir ce que l'on appelle des Repository.
-      // Grace a eux, on a directement acces au donnees de notre Entitie Offers.
-
-      // La methode index sert a renvoyer une liste des offres, contenu donc dans notre base de donnees.
-
-      // D'abord on recupere toute les offres.
+        // On recupere les offres et les serialize en JSON.
         $offers = $offersRepository->findAll();
+        $offers_json = $this->get('serializer')->serialize($offers, 'json');
 
-      // Puis on les serialize en JSON pour pouvoir les transmettres.
-        $data = $this->get('serializer')->serialize($offers, 'json');
-
-      // On fait une nouvelle reponse, dans lequelle on va pouvoir y donne quelque information pour le header.
-        $response = new Response($data);
+        // Puis on informe le header et les envoies au endpoints.
+        $response = new Response($offers_json,  201);
         $response->headers->set('Content-Type', 'application/json');
-
-      // Et pour finir on retourne nos donnees en JSON sur le endpoints.
         return $response;
     }
 
     // La methode new sert a creer de nouvelles offres.
-    // On va donc pas envoyer mais recuperer des donnees en JSON que nous allons pouvoir traiter puis instaurer dans la base de donnees.
-    // Ici la route sera /offers/new
-
+    // On va recuperer des donnees en JSON que nous allons pouvoir traiter puis instaurer dans la base de donnees.
     /**
-     * @Route("/new", name="offers_new", methods="GET|POST")
-     */
+    * @Route("/new", name="offers_new", methods="POST")
+    */
     public function new(Request $request): Response
     {
-      // On cree une nouvelle Entite Offers pour utiliser ses methodes.
+        $donnee_offer = json_decode($request->getContent(), true);
         $offer = new Offers();
 
-      // On recupere les donnees envoyer par le front.
-    		$data = $request->getContent();
-        // die($data);
+        $form = $this->createForm(OffersType::class, $offer);
+        $form->setData($donnee_offer);
+        $form->submit($donnee_offer);
 
-      // Etant en JSON, on le decode tout simplement.
-    		$data = json_decode($data);
+        if($form->isSubmitted() && $form->isValid())
+        {
+            $database = $this->getDoctrine()->getManager();
+            $database->persist($offer);
+            $database->flush();
+            return new Response('Tout est dans la database !', Response::HTTP_CREATED);
+        }
 
-      // On appelle manager pour pouvoir faire le lien entre le repository et l'entite.
-    		$manager = $this->getDoctrine()->getManager();
+        $validator = $this->get('validator');
+        $errors = $validator->validate($offer);
 
-      // On prepare les valeurs.
-    		foreach($data as $key => $value) {
-    			$set = 'set' . ucfirst($key);
-    			$offer->{$set}($value);
-    		}
-
-      // On les instaure a l'offre.
-    		$manager->persist($offer);
-      // Et on envoie le tout a la base de donnees.
-    		$manager->flush();
-      // Le front voulant un retour, on recupere l'id de l'article cree.
-    		$id = $offer->getId();
-      // Puis on envoie le tout, avec le status 201 pour dire qu'il y  a bien une offre de cree.
-    		return new Response($id, Response::HTTP_CREATED);
+        return new Response(var_dump($donnee_offer), Response::HTTP_BAD_REQUEST);
     }
 
     // La methode show, renvoie une offre particuliere par rapport a celle demande par le front.
-    // Il faut donc qu'elle recupere l'id de cette offre en quesiton, pour la chercher dans la base de donnees.
+    // Il faut donc qu'elle recupere l'id de cette offre en question, pour la chercher dans la base de donnees.
 
     /**
-     * @Route("/{id}", name="offers_show", methods="GET")
-     */
+    * @Route("/{id}", name="offers_show", methods="GET")
+    */
     public function show(Offers $offer): Response
     {
-      // On la serialize en JSON.
-        $data = $this->get('serializer')->serialize($offer, 'json');
-    		$response = new Response($data);
-      // On precise le header.
+        // On recupere l'id de l'offre a renvoyer, puis en l'envoie en JSON.
+        if (!$offer) {
+            throw $this->createNotFoundException(sprintf(
+                ' L\' offre n\' a pas ete trouver :('
+            ));
+        }
+
+        $offer = $this->get('serializer')->serialize($offer, 'json');
+    		$response = new Response($offer, 200);
     		$response->headers->set('Content-Type', 'application/json');
-      // Puis on l'envoie au front.
     		return $response;
     }
 
@@ -106,50 +92,54 @@ class OffersController extends Controller
     // Elle recupere donc l'id de l'offre a update et les valeurs a change, puis la modifie.
 
     /**
-     * @Route("/{id}/edit", name="offers_edit", methods="GET|POST|PUT")
-     */
+    * @Route("/{id}/edit", name="offers_edit", methods="PUT")
+    */
     public function edit(Request $request, Offers $offer): Response
     {
-    // On recupere les nouvelles valeurs.
-      $data = $request->getContent();
-    // Etant en JSON, on le decode tout simplement.
-      $data = json_decode($data);
-    // On appelle manager pour pouvoir faire le lien entre le repository et l'entite.
-      $manager = $this->getDoctrine()->getManager();
-    // On prepare les valeurs.
-      foreach($data as $key => $value) {
-        if($value != NULL)
+        if(isset($offer))
         {
-          $set = 'set' . ucfirst($key);
-          $offer->{$set}($value);
+            // Si l'offre n'existe pas, on previent le client.
+            return new Response("L'offre n'a pas ete trouve :(", 404);
         }
-      }
 
-    // On modifie l'offre.
-      $manager->persist($offer);
-    // Et on envoie le tout a la base de donnees.
-      $manager->flush();
-    // Le front voulant un retour, on recupere l'id de l'article cree.
-      $id = $offer->getId();
-    // Puis on envoie le tout, avec le status 202 pour dire que tout c'est bien passe.
-      return new Response(var_dump($offer), Response::HTTP_ACCEPTED);
+        // On recupere l'id et l'offre de l'offre a traiter, les informations a changer puis on traites celles-ci.
+        $donnees_offer = $request->getContent();
+        $donnees_offer = json_decode($donnees_offer);
+
+        // On set le tout dans la base de donnees.
+        $manager = $this->getDoctrine()->getManager();
+        foreach($donees_offer as $key => $value)
+        {
+            if($value != NULL)
+            {
+                $set = 'set' . ucfirst($key);
+                $offer->{$set}($value);
+            }
+        }
+
+        $manager->persist($offer);
+        $manager->flush();
+        $id = $offer->getId();
+        return new Response(var_dump($id), 200);
     }
 
     // La derniere methode delete sert tout simplement a supprimer une offre.
     // On recupere donc l'id de l'offre envoye par le front et on la supprime.
 
     /**
-     * @Route("/{id}", name="offers_delete", methods="DELETE")
-     */
+    * @Route("/{id}", name="offers_delete", methods="DELETE")
+    */
     public function delete(Request $request, Offers $offer): Response
     {
-   // On appelle manager pour pouvoir faire le lien entre le repository et l'entite.
-      $em = $this->getDoctrine()->getManager();
-   // On supprime l'offre demande.
-      $em->remove($offer);
-   // On l'applique a la base de donnee.
-      $em->flush();
-   // On retourune une reponse avec le status 204 pour signaler le fait qu'il n'y a plus rien.
-      return new Response('Supprimer',Response::HTTP_NO_CONTENT);
+        // Ici, nous avons juste a recuperer l'id de l'offre en question et de la supprimer de la base de donnees.
+        if(isset($offer))
+        {
+            // Si l'offre n'existe pas, on previent le client.
+            return new Response("L'offre n'a pas ete trouve :(", 404);
+        }
+        $database = $this->getDoctrine()->getManager();
+        $database->remove($offer);
+        $database->flush();
+        return new Response('Supprimer', 204);
     }
 }
