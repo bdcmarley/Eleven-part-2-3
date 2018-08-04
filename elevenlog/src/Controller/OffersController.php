@@ -20,8 +20,8 @@ use JMS\Serializer\SerializationContext;
 class OffersController extends Controller
 {
     // Puis on fait les methodes et leurs chemins que nous allons appeller pour avoir nos resultats, les endpoints.
-    // La methode index sert a renvoyer une liste des offres, contenu donc dans notre base de donnees.
 
+    // La methode index sert a renvoyer une liste des offres, contenu donc dans notre base de donnees.
     /**
     * @Route("/", name="offers_index")
     * @Method("GET")
@@ -45,18 +45,19 @@ class OffersController extends Controller
     */
     public function new(Request $request): Response
     {
-        // On recuperee nos donnees pour la creation de l'offre.
+        // On recupere nos donnees pour la creation de l'offre.
         $donnee_offer = json_decode($request->getContent(), true);
         $offer = new Offers();
 
-        // On creer un fomulaire dans lequelle on va y apporter nos donneer
-        $form = $this->createForm(OffersType::class, $offer);
-        $form->setData($donnee_offer);
-        $form->submit($donnee_offer);
+        // On creer un fomulaire dans lequelle on va y apporter nos donnees
+        $form = $this->createForm(OffersType::class, $offer, array('csrf_protection' => false));
+        // $form->setData($donnee_offer);
+        $form->submit($donnee_offer);;
 
         // Si le fomulaire est envoyer et valider, on met le tout dans la base de donnees
         if($form->isSubmitted() && $form->isValid())
         {
+          // die(var_dump($donnee_offer));
             $database = $this->getDoctrine()->getManager();
             $database->persist($offer);
             $database->flush();
@@ -72,19 +73,20 @@ class OffersController extends Controller
 
     // La methode show, renvoie une offre particuliere par rapport a celle demande par le front.
     // Il faut donc qu'elle recupere l'id de cette offre en question, pour la chercher dans la base de donnees.
-
     /**
     * @Route("/{id}", name="offers_show", methods="GET")
     */
     public function show(Offers $offer): Response
     {
-        // On recupere l'id de l'offre a renvoyer, puis en l'envoie en JSON.
-        if (!$offer) {
-            throw $this->createNotFoundException(sprintf(
-                ' L\' offre n\' a pas ete trouver :('
-            ));
+        // On verifie si l'offre existe.
+        if (!$offer)
+        {
+            throw $this->createNotFoundException(
+              new Response("L'offre n'a pas ete trouve :(", 404)
+            );
         }
 
+        // Si oui, on envoie les donnees tout simplement.
         $offer = $this->get('serializer')->serialize($offer, 'json');
     		$response = new Response($offer, 200);
     		$response->headers->set('Content-Type', 'application/json');
@@ -93,53 +95,60 @@ class OffersController extends Controller
 
     // La methode edit permet de modifier une offre.
     // Elle recupere donc l'id de l'offre a update et les valeurs a change, puis la modifie.
-
     /**
-    * @Route("/{id}/edit", name="offers_edit", methods="PUT")
+    * @Route("/{id}/edit", name="offers_edit", methods="PUT|PATCH")
     */
     public function edit(Request $request, Offers $offer): Response
     {
-        if(isset($offer))
+        // On verifie si l'offre existe.
+        if (!$offer)
         {
-            // Si l'offre n'existe pas, on previent le client.
-            return new Response("L'offre n'a pas ete trouve :(", 404);
+            throw $this->createNotFoundException(
+              new Response("L'offre n'a pas ete trouve :(", 404)
+            );
         }
 
-        // On recupere l'id et l'offre de l'offre a traiter, les informations a changer puis on traites celles-ci.
-        $donnees_offer = $request->getContent();
-        $donnees_offer = json_decode($donnees_offer);
+        // On recupere nos donnees pour la creation de l'offre.
+        $donnees_offer = json_decode($request->getContent(), true);
 
-        // On set le tout dans la base de donnees.
-        $manager = $this->getDoctrine()->getManager();
-        foreach($donees_offer as $key => $value)
+        // On creer un fomulaire dans lequelle on va y apporter nos donnees
+        $form = $this->createForm(OffersType::class, $offer, array('csrf_protection' => false));
+        $form->submit($donnees_offer);
+
+        // Si le fomulaire est envoyer et valider, on met le tout dans la base de donnees
+        if($form->isSubmitted() && $form->isValid())
         {
-            if($value != NULL)
-            {
-                $set = 'set' . ucfirst($key);
-                $offer->{$set}($value);
-            }
+            // On set le tout dans la base de donnees.
+            $manager = $this->getDoctrine()->getManager();
+            $manager->persist($offer);
+            $manager->flush();
+            $id = $offer->getId();
+            return new Response(var_dump($id), 200);
         }
 
-        $manager->persist($offer);
-        $manager->flush();
-        $id = $offer->getId();
-        return new Response(var_dump($id), 200);
+        // Sinon, on previent le client.
+        $validator = $this->get('validator');
+        $errors = $validator->validate($offer);
+
+        return new Response(var_dump($donnee_offer), Response::HTTP_BAD_REQUEST);
     }
 
     // La derniere methode delete sert tout simplement a supprimer une offre.
     // On recupere donc l'id de l'offre envoye par le front et on la supprime.
-
     /**
     * @Route("/{id}", name="offers_delete", methods="DELETE")
     */
     public function delete(Request $request, Offers $offer): Response
     {
-        // Ici, nous avons juste a recuperer l'id de l'offre en question et de la supprimer de la base de donnees.
-        if(isset($offer))
+        // On verifie si l'offre existe.
+        if (!$offer)
         {
-            // Si l'offre n'existe pas, on previent le client.
-            return new Response("L'offre n'a pas ete trouve :(", 404);
+            throw $this->createNotFoundException(
+              new Response("L'offre n'a pas ete trouve :(", 404)
+            );
         }
+
+        // On la supprime, tout simplement.
         $database = $this->getDoctrine()->getManager();
         $database->remove($offer);
         $database->flush();

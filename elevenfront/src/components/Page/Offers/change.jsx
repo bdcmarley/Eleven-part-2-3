@@ -20,84 +20,101 @@ class Change extends React.Component {
         this.state = {
             error: [],
             success: [],
-            name: [],
-            offer: '',
+            offer: {
+                title: '',
+                content: '',
+                description: '',
+                price: ''
+            },
         };
+        this.handleChange = this.handleChange.bind(this);
     }
 
 // Tout d'abord on recupere les informations de l'offre pour les avoirs sous nos yeux.
     componentDidMount() {
-      var url = window.location.href.split('/');
-      url = '/offers/' + url[4];
-        axios.get(url)
+        if(this.state.offer.title == '')
+        {
+            var url = window.location.href.split('/');
+            url = '/offers/' + url[4];
+            axios.get(url)
             .then(result => {
                 this.setState({ offer: result.data });
-                            });
+            });
+        }
     }
 
-// Lors de la validation du formulaire, cette methode se declanche.
+
+    // Lors de la validation du formulaire, cette methode se declanche.
     validateForm() {
-      // On reunit les valeurs entrees par l'utilisateur.
+        // On reunit les valeurs entrees par l'utilisateur.
         var doc = {
-          title: this.title.value,
-          content: this.content.value,
-          description: this.description.value,
-          price: this.price.value
+            title: this.title.value,
+            content: this.content.value,
+            description: this.description.value,
+            price: this.price.value
         };
-        // lors d'une modification, la methode est un PUT.
-          axios.put('/offers/' + this.state.offer.id + '/edit', doc)
-              .then(response => {
-                  this.setState({
-                      error: response.data.error || [],
-                      success: response.data.error ? [] : ['Offer modified']
-                      // Si tout se passe bien, la page est recharge avec les nouvelles valeurs.
-                  });
-              });
+        // lors d'une modification, la methode est PUT.
+        var url = window.location.href.split('/');
+        url = '/offers/' + url[4];
+        axios.put(url + '/edit', doc)
+        .then(response => {
+            this.setState({
+                // Si tout se passe bien, la page est recharge avec les nouvelles valeurs.
+                error: response.data.error || [],
+                success: response.data.error ? [] : ['Offer modified']
+            });
+        });
     }
 
-// Pour nous simplifier la vie, cette function prend en parametre 2 arguments :
-// le premier est le type d'input que vous voulez.
-// le deuxieme est tout simplement le name.
-// Il nous suffit juste de l'apeller pour faire nos inputs.
-    formInput(type, name)
+    // Pour nous simplifier la vie, cette function prend en parametre 2 arguments :
+    // le premier est le type d'input que vous voulez.
+    // le deuxieme est tout simplement le name.
+    // Il nous suffit juste de l'apeller pour faire nos inputs.
+    formInput(type, name, value)
     {
-      return (
-      <FormGroup>
-          <ControlLabel>{name}</ControlLabel>
-          <FormControl
-              type={type}
-              name={name}
-              id={'exemple'+name}
-              placeholder={name}
-              inputRef={ input => this[name] = input }
-          />
-        </FormGroup>
-        );
+        return (
+            <FormGroup>
+            <ControlLabel>{name}</ControlLabel>
+            <FormControl
+                type={type}
+                name={name}
+                value={value}
+                id={'exemple'+name}
+                inputRef={ input => this[name] = input }
+                onChange={this.handleChange(name).bind(this)}
+             />
+           </FormGroup>
+         );
+    }
+
+    // A chaque evenement, on change la valeur du state tape dans l'input.
+    handleChange(fieldName)
+    {
+        return function (event)
+        {
+            this.setState({offer: {
+                [fieldName]: event.target.value}});
+        };
     }
 
     render() {
-      // Ici on refait un formulaire comme pour le create.
-      // Lors de la validation de celui-ci, la methode ValidateForm s'enclenche.
+        // Ici on refait un formulaire comme pour le create.
+        // On preremplit les value avec celle existantes.
+        // Lors de la validation de celui-ci, la methode ValidateForm s'enclenche.
         return (
             <div>
                 <Form inline onSubmit={ (e) => this.validateForm(e) } >
                     <Error messages={this.state.error}/>
                     <Success messages={this.state.success}/>
-                    <h1>{this.state.offer.title}</h1>
-                    {this.formInput('text', 'title')}
-                    <p>{this.state.offer.content}</p>
-                    {this.formInput('text', 'content')}
-                    <h3>{this.state.offer.description}</h3>
-                    {this.formInput('text', 'description')}
-                    <h3>{this.state.offer.price}</h3>
-                    {this.formInput('number', 'price')}
+                    {this.formInput('text', 'title', this.state.offer.title)}
+                    {this.formInput('text', 'content', this.state.offer.content)}
+                    {this.formInput('text', 'description', this.state.offer.description)}
+                    {this.formInput('number', 'price', this.state.offer.price)}
                     <Button type="submit">Submit</Button>
                 </Form>
                 <a href={`/offers/${this.state.offer.id}`}>show</a>
             </div>
-
         );
     }
 }
-
 export default Change;

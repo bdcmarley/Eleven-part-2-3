@@ -12,30 +12,18 @@ use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 
 class OffersType extends AbstractType
 {
-    /**
-   * @param FormBuilderInterface $builder
-   * @param array $options
-   */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('title')
-            ->add('content')
-            // ->add('picture', TextType::class)
-            ->add('description')
-            ->add('price');
-            // ->add('save', SubmitType::class);
-            // die(var_dump($builder));
+            ->add('title', TextType::class)
+            ->add('content', TextType::class)
+            ->add('description', TextType::class)
+            ->add('price', IntegerType::class);
     }
-
-    /**
-   * @param OptionsResolverInterface $resolver
-   */
-   public function setDefaultOptions(OptionsResolverInterface $resolver)
+   public function configureOptions(OptionsResolver  $resolver)
    {
-       $resolver->setDefaults(array(
-           'data_class' => 'App/Entity/Offers'
-
-       ));
+       $resolver->setDefaults([
+           'data_class' => Offers::class,
+       ]);
    }
 }

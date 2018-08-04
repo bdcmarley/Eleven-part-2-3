@@ -24,16 +24,7 @@ class Create extends React.Component {
         };
     }
 // Lors de la validation du formulaire, cette methode s'enclenche.
-    validateForm(event){
-
-        event.preventDefault();
-// On prepapre les valeurs a envoye.
-        // var doc = {
-        //   title: this.title.value,
-        //   content: this.content.value,
-        //   description: this.description.value,
-        //   price: this.price.value
-        // };
+    validateForm(){
 // Voulent creer une offre, la methode est donc POST.
           axios.post('/offers/new' , {
             title: this.title.value,
@@ -41,13 +32,6 @@ class Create extends React.Component {
             description: this.description.value,
             price: this.price.value
           });
-              // .then(response => {
-                  // this.setState({
-                      // error: response.data.error || [],
-                      // success: response.data.error ? [] : ['Offer created'],
-                  // });
-                  // document.location.href='/offers/' + response.data;
-              // });
     }
 // Petite function pour nous simplifier notre fomulaire.
     formInput(type, name)
@@ -79,8 +63,8 @@ class Create extends React.Component {
                     {this.formInput('text', 'description')}
                     {this.formInput('number', 'price')}
                     <Button type="submit">Submit</Button>
-
                 </Form>
+                <a href="/offers">Home</a>
             </div>
 
         );

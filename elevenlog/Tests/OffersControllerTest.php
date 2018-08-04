@@ -17,8 +17,12 @@ class OffersControllerTest extends TestCase
     {
 
         // Ici, on simule un client.
-        $client = new GuzzleHttp\Client([
-            'base_uri' => 'http://localhost::8000'
+        $client = new \GuzzleHttp\Client([
+            'base_uri' => 'http://localhost:8000',
+            'debug' => true,
+            'defaults' => [
+                'exceptions' => false
+            ]
         ]);
 
         // On prepare des donnees a envoyer au POST
