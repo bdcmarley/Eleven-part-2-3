@@ -20,10 +20,11 @@ class OffersType extends AbstractType
             ->add('description', TextType::class)
             ->add('price', IntegerType::class);
     }
-   public function configureOptions(OptionsResolver  $resolver)
-   {
-       $resolver->setDefaults([
+
+    public function configureOptions(OptionsResolver  $resolver)
+    {
+        $resolver->setDefaults([
            'data_class' => Offers::class,
-       ]);
-   }
+        ]);
+    }
 }

@@ -56,7 +56,7 @@ class Change extends React.Component {
         // lors d'une modification, la methode est PUT.
         var url = window.location.href.split('/');
         url = '/offers/' + url[4];
-        axios.put(url + '/edit', doc)
+        axios.put(url, doc)
         .then(response => {
             this.setState({
                 // Si tout se passe bien, la page est recharge avec les nouvelles valeurs.

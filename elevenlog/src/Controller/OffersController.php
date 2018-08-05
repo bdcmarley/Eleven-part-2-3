@@ -33,7 +33,7 @@ class OffersController extends Controller
         $offers_json = $this->get('serializer')->serialize($offers, 'json');
 
         // Puis on informe le header et les envoies au endpoints.
-        $response = new Response($offers_json,  201);
+        $response = new Response($offers_json, 200);
         $response->headers->set('Content-Type', 'application/json');
         return $response;
     }
@@ -41,7 +41,7 @@ class OffersController extends Controller
     // La methode new sert a creer de nouvelles offres.
     // On va recuperer des donnees en JSON que nous allons pouvoir traiter puis instaurer dans la base de donnees.
     /**
-    * @Route("/new", name="offers_new", methods="POST")
+    * @Route("/", name="offers_new", methods="POST")
     */
     public function new(Request $request): Response
     {
@@ -51,17 +51,15 @@ class OffersController extends Controller
 
         // On creer un fomulaire dans lequelle on va y apporter nos donnees
         $form = $this->createForm(OffersType::class, $offer, array('csrf_protection' => false));
-        // $form->setData($donnee_offer);
-        $form->submit($donnee_offer);;
+        $form->submit($donnee_offer);
 
         // Si le fomulaire est envoyer et valider, on met le tout dans la base de donnees
-        if($form->isSubmitted() && $form->isValid())
-        {
-          // die(var_dump($donnee_offer));
+        if ($form->isSubmitted() && $form->isValid()) {
             $database = $this->getDoctrine()->getManager();
             $database->persist($offer);
             $database->flush();
-            return new Response('Tout est dans la database !', Response::HTTP_CREATED);
+            $id = $database->getId();
+            return new Response('/offers/' . $id, 201);
         }
 
         // Sinon, on previent le client
@@ -79,32 +77,30 @@ class OffersController extends Controller
     public function show(Offers $offer): Response
     {
         // On verifie si l'offre existe.
-        if (!$offer)
-        {
+        if (!$offer) {
             throw $this->createNotFoundException(
-              new Response("L'offre n'a pas ete trouve :(", 404)
+                new Response("L'offre n'a pas ete trouve :(", 404)
             );
         }
 
         // Si oui, on envoie les donnees tout simplement.
         $offer = $this->get('serializer')->serialize($offer, 'json');
-    		$response = new Response($offer, 200);
-    		$response->headers->set('Content-Type', 'application/json');
-    		return $response;
+        $response = new Response($offer, 200);
+        $response->headers->set('Content-Type', 'application/json');
+        return $response;
     }
 
     // La methode edit permet de modifier une offre.
     // Elle recupere donc l'id de l'offre a update et les valeurs a change, puis la modifie.
     /**
-    * @Route("/{id}/edit", name="offers_edit", methods="PUT|PATCH")
+    * @Route("/{id}", name="offers_edit", methods="PUT|PATCH")
     */
     public function edit(Request $request, Offers $offer): Response
     {
         // On verifie si l'offre existe.
-        if (!$offer)
-        {
+        if (!$offer) {
             throw $this->createNotFoundException(
-              new Response("L'offre n'a pas ete trouve :(", 404)
+                new Response("L'offre n'a pas ete trouve :(", 404)
             );
         }
 
@@ -116,8 +112,7 @@ class OffersController extends Controller
         $form->submit($donnees_offer);
 
         // Si le fomulaire est envoyer et valider, on met le tout dans la base de donnees
-        if($form->isSubmitted() && $form->isValid())
-        {
+        if ($form->isSubmitted() && $form->isValid()) {
             // On set le tout dans la base de donnees.
             $manager = $this->getDoctrine()->getManager();
             $manager->persist($offer);
@@ -141,10 +136,9 @@ class OffersController extends Controller
     public function delete(Request $request, Offers $offer): Response
     {
         // On verifie si l'offre existe.
-        if (!$offer)
-        {
+        if (!$offer) {
             throw $this->createNotFoundException(
-              new Response("L'offre n'a pas ete trouve :(", 404)
+                new Response("L'offre n'a pas ete trouve :(", 404)
             );
         }
 
@@ -155,4 +149,3 @@ class OffersController extends Controller
         return new Response('Supprimer', 204);
     }
 }
-?>

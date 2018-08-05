@@ -18,11 +18,13 @@ class Offers
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Serializer\Groups({"index", "show"})
      */
     private $title;
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Serializer\Groups({"show"})
      */
     private $content;
 
@@ -33,11 +35,13 @@ class Offers
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Serializer\Groups({"index", "show"})
      */
     private $description;
 
     /**
      * @ORM\Column(type="integer", nullable=true)
+     * @Serializer\Groups({"index", "show"})
      */
     private $price;
 
